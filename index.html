@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔮 AI 사주 만세력 — 종합 역학 풀이</title>
+<meta name="description" content="실제 절기 천문 계산 기반 만세력. 사주팔자 · 오행 · 대운 · 운세 · 천기누설을 무료로 풀이합니다.">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="hero">
+  <h1>🔮 AI 사주 만세력</h1>
+  <p class="sub">실제 절기·삭망 천문 계산 기반 종합 역학 풀이</p>
+  <p class="badge-row">
+    <span class="badge">랜덤 없음 · 같은 입력 = 같은 결과</span>
+    <span class="badge">API 키 불필요</span>
+  </p>
+</header>
+
+<main>
+  <!-- 오늘의 운세 위젯 (재방문 시 자동 표시) -->
+  <section class="card widget-card hidden" id="widgetCard"></section>
+
+  <!-- 입력 -->
+  <section class="card input-card" id="inputCard">
+    <h2>📋 사주 정보 입력</h2>
+    <form id="sajuForm">
+      <div class="grid2">
+        <label>이름 (선택)
+          <input type="text" id="name" placeholder="홍길동" maxlength="20" autocomplete="off">
+        </label>
+        <label>성별
+          <div class="seg" role="radiogroup">
+            <input type="radio" name="gender" id="gM" value="M" checked><label for="gM">남자</label>
+            <input type="radio" name="gender" id="gF" value="F"><label for="gF">여자</label>
+          </div>
+        </label>
+      </div>
+
+      <div class="grid2">
+        <label>양력 / 음력
+          <div class="seg">
+            <input type="radio" name="cal" id="calS" value="solar" checked><label for="calS">양력</label>
+            <input type="radio" name="cal" id="calL" value="lunar"><label for="calL">음력</label>
+          </div>
+        </label>
+        <label id="leapWrap" class="hidden">윤달 여부
+          <div class="seg">
+            <input type="radio" name="leap" id="leapN" value="0" checked><label for="leapN">평달</label>
+            <input type="radio" name="leap" id="leapY" value="1"><label for="leapY">윤달</label>
+          </div>
+        </label>
+      </div>
+
+      <label>생년월일</label>
+      <div class="grid3">
+        <select id="bYear" aria-label="년"></select>
+        <select id="bMonth" aria-label="월"></select>
+        <select id="bDay" aria-label="일"></select>
+      </div>
+
+      <label class="mt">출생 시간
+        <span class="inline-check"><input type="checkbox" id="unknownTime"> <span>시간 모름 (시주 제외 삼주 풀이)</span></span>
+      </label>
+      <div class="grid2" id="timeRow">
+        <select id="bHour" aria-label="시"></select>
+        <select id="bMin" aria-label="분"></select>
+      </div>
+
+      <div class="grid2 mt">
+        <label>출생 지역
+          <select id="region"></select>
+        </label>
+        <label class="inline-check mt-label">
+          <input type="checkbox" id="trueSolar" checked>
+          <span>진태양시 보정 (경도 기준, 권장)</span>
+        </label>
+      </div>
+
+      <button type="submit" class="cta">사주 풀이 보기 🔮</button>
+    </form>
+  </section>
+
+  <!-- 결과 -->
+  <div id="results" class="hidden">
+    <div id="printCover" class="print-only"></div>
+    <section class="card" id="secPillars"></section>
+    <section class="card" id="secElements"></section>
+    <section class="card" id="secPersona"></section>
+    <section class="card" id="secStrength"></section>
+    <section class="card" id="secLife"></section>
+    <section class="card" id="secDaeun"></section>
+    <section class="card" id="secFortune"></section>
+    <section class="card" id="secGraph"></section>
+    <section class="card" id="secSecret"></section>
+    <section class="card" id="secLucky"></section>
+
+    <!-- AI 상담 -->
+    <section class="card" id="secConsult">
+      <h2>💬 AI 사주 상담</h2>
+      <p class="muted">사주 원국 · 현재 대운 · 세운 · 향후 12개월 월운을 종합해 상담사처럼 답해드립니다.</p>
+      <div class="chips preset-chips" id="consultPresets"></div>
+      <div class="consult-input">
+        <input type="text" id="consultQ" placeholder="예: 퇴사해도 될까요? / 창업해도 될까요?" maxlength="80">
+        <button id="consultBtn">상담받기</button>
+      </div>
+      <div id="consultA"></div>
+    </section>
+
+    <!-- 택일 -->
+    <section class="card" id="secTaekil">
+      <h2>📅 택일 — 앞으로 30일 중 좋은 날</h2>
+      <p class="muted">나의 사주와 매일의 일진을 대조해 목적별 길일을 추천합니다.</p>
+      <div class="seg period-seg" id="taekilPeriod"></div>
+      <div class="seg purpose-seg" id="taekilPurpose"></div>
+      <div id="taekilResult"></div>
+    </section>
+
+    <!-- 궁합 -->
+    <section class="card" id="secGunghap">
+      <h2>💞 궁합 — 상대방 정보 입력</h2>
+      <p class="muted">연인·배우자·동업자 등 상대의 사주와 비교해 다섯 가지 합을 분석합니다.</p>
+      <form id="gunghapForm">
+        <div class="grid2">
+          <label>상대 성별
+            <div class="seg">
+              <input type="radio" name="pGender" id="pgM" value="M" checked><label for="pgM">남자</label>
+              <input type="radio" name="pGender" id="pgF" value="F"><label for="pgF">여자</label>
+            </div>
+          </label>
+          <label>양력 / 음력
+            <div class="seg">
+              <input type="radio" name="pCal" id="pCalS" value="solar" checked><label for="pCalS">양력</label>
+              <input type="radio" name="pCal" id="pCalL" value="lunar"><label for="pCalL">음력</label>
+            </div>
+          </label>
+        </div>
+        <label id="pLeapWrap" class="hidden">윤달 여부
+          <div class="seg">
+            <input type="radio" name="pLeap" id="pLeapN" value="0" checked><label for="pLeapN">평달</label>
+            <input type="radio" name="pLeap" id="pLeapY" value="1"><label for="pLeapY">윤달</label>
+          </div>
+        </label>
+        <label class="mt">상대 생년월일</label>
+        <div class="grid3">
+          <select id="pYear" aria-label="년"></select>
+          <select id="pMonth" aria-label="월"></select>
+          <select id="pDay" aria-label="일"></select>
+        </div>
+        <label class="mt">출생 시간
+          <span class="inline-check"><input type="checkbox" id="pUnknownTime" checked> <span>시간 모름</span></span>
+        </label>
+        <div class="grid2 hidden" id="pTimeRow">
+          <select id="pHour" aria-label="시"></select>
+          <select id="pMin" aria-label="분"></select>
+        </div>
+        <button type="submit" class="cta">궁합 보기 💞</button>
+      </form>
+      <div id="gunghapResult"></div>
+    </section>
+
+    <div class="action-row">
+      <button id="btnPrint" class="ghost">🖨️ 인쇄 / PDF 저장</button>
+      <button id="btnShare" class="ghost">🔗 결과 링크 복사</button>
+      <button id="btnReset" class="ghost">↺ 다시 입력</button>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <p><a class="trust-link" href="trust.html">🔍 왜 이 결과를 믿을 수 있나요? — 계산 방식·검증 현황 보기</a></p>
+  <p>본 서비스의 모든 풀이는 명리학과 전통 역학의 해석을 바탕으로 한 <strong>참고용 상담 콘텐츠</strong>입니다.
+  미래를 단정하지 않으며, 중요한 결정은 반드시 본인의 판단과 전문가 상담을 거치시기 바랍니다.</p>
+  <p class="tiny">만세력 계산: 태양 황경 기반 24절기 · 삭망 천문 계산 (한국 표준시, 역사적 표준시 변경 반영) ·
+  절입 시각 경계(±수 분 이내) 출생은 전문가 확인을 권장합니다.</p>
+</footer>
+
+<a class="feedback-fab" href="mailto:akfnld1@gmail.com?subject=%5BAI%20%EC%82%AC%EC%A3%BC%20%EB%A7%8C%EC%84%B8%EB%A0%A5%5D%20%EC%9D%98%EA%B2%AC%20%EB%B3%B4%EB%82%B4%EA%B8%B0" title="불편한 점이나 개선 의견 보내기">💬 의견 보내기</a>
+
+<script src="js/astro.js"></script>
+<script src="js/manse.js"></script>
+<script src="js/analysis.js"></script>
+<script src="js/texts.js"></script>
+<script src="js/consult.js"></script>
+<script src="js/gunghap.js"></script>
+<script src="js/taekil.js"></script>
+<script src="js/analytics.js"></script>
+<script src="js/app.js"></script>
+<script src="js/features-ui.js"></script>
+<script src="js/graph.js"></script>
+<script src="js/widget.js"></script>
+</body>
+</html>
